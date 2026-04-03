@@ -1,12 +1,11 @@
-@set masver=3.7
+@set masver=3.10
 @echo off
 
 
 
 ::============================================================================
 ::
-::   Homepage: mass()grave(dot)dev
-::      Email: mas.help@outlook.com
+::   Homepage: m{}assgrave{dot}dev
 ::
 ::============================================================================
 
@@ -60,9 +59,9 @@ exit /b
 ::========================================================================================================================================
 
 set "blank="
-set "mas=ht%blank%tps%blank%://mass%blank%grave.dev/"
-set "github=ht%blank%tps%blank%://github.com/massgra%blank%vel/Micro%blank%soft-Acti%blank%vation-Scripts"
-set "selfgit=ht%blank%tps%blank%://git.acti%blank%vated.win/massg%blank%rave/Micr%blank%osoft-Act%blank%ivation-Scripts"
+set "mas=ht%blank%tps%blank%://m%blank%ass%blank%grave.dev/"
+set "github=ht%blank%tps%blank%://github.com/m%blank%assgra%blank%vel/Micro%blank%soft-Acti%blank%vation-Scripts"
+set "selfgit=ht%blank%tps%blank%://git.acti%blank%vated.win/Micr%blank%osoft-Act%blank%ivation-Scripts"
 
 ::  Check if Null service is working, it's important for the batch script
 
@@ -231,7 +230,6 @@ REM check LanguageMode
 echo: !tstresult2! | findstr /i "ConstrainedLanguage RestrictedLanguage NoLanguage" %nul1% && (
 echo FullLanguage mode not found in PowerShell. Aborting...
 echo If you have applied restrictions on Powershell then undo those changes.
-echo:
 set fixes=%fixes% %mas%fix_powershell
 call :dk_color2 %Blue% "Check this webpage for help - " %_Yellow% " %mas%fix_powershell"
 goto done2
@@ -241,7 +239,6 @@ REM check Powershell core version
 
 cmd /c "%psc% "$PSVersionTable.PSEdition"" | find /i "Core" %nul1% && (
 echo Windows Powershell is needed for MAS but it seems to be replaced with Powershell core. Aborting...
-echo:
 set fixes=%fixes% %mas%in-place_repair_upgrade
 call :dk_color2 %Blue% "Check this webpage for help - " %_Yellow% " %mas%in-place_repair_upgrade"
 goto done2
@@ -252,7 +249,6 @@ REM check for Mal-ware that may cause issues with Powershell
 for /r "%ProgramFiles%\" %%f in (secureboot.exe) do if exist "%%f" (
 echo "%%f"
 echo Mal%blank%ware found, PowerShell is not working properly.
-echo:
 set fixes=%fixes% %mas%remove_mal%w%ware
 call :dk_color2 %Blue% "Check this webpage for help - " %_Yellow% " %mas%remove_mal%w%ware"
 goto done2
@@ -264,7 +260,6 @@ if /i "!tstresult2!"=="FullLanguage" (
 cmd /c "%psc% ""try {[System.AppDomain]::CurrentDomain.GetAssemblies(); [System.Math]::Sqrt(144)} catch {Exit 3}""" %nul%
 if !errorlevel!==3 (
 echo Windows Powershell failed to load .NET command. Aborting...
-echo:
 set fixes=%fixes% %mas%in-place_repair_upgrade
 call :dk_color2 %Blue% "Check this webpage for help - " %_Yellow% " %mas%in-place_repair_upgrade"
 goto done2
@@ -285,7 +280,6 @@ echo Installed Antivirus - Microsoft Defender for Endpoint
 cmd /c "%psc% ""$av = Get-WmiObject -Namespace root\SecurityCenter2 -Class AntiVirusProduct; $n = @(); foreach ($i in $av) { $n += $i.displayName }; if ($n) { Write-Host ('Installed Antivirus - ' + ($n -join ', '))}"""
 )
 
-echo:
 set fixes=%fixes% %mas%troubleshoot
 call :dk_color2 %Blue% "Check this webpage for help - " %_Yellow% " %mas%troubleshoot"
 goto done2
@@ -406,7 +400,6 @@ goto done2
 )
 
 set HWID_Activation.cmd=Activators\HWID_Activation.cmd
-set KMS38_Activation.cmd=Activators\KMS38_Activation.cmd
 set Online_KMS_Activation.cmd=Activators\Online_KMS_Activation.cmd
 set Ohook_Activation_AIO.cmd=Activators\Ohook_Activation_AIO.cmd
 set TSforge_Activation.cmd=Activators\TSforge_Activation.cmd
@@ -415,7 +408,6 @@ pushd "!_work!"
 set _nofile=
 for %%# in (
 %HWID_Activation.cmd%
-%KMS38_Activation.cmd%
 %Online_KMS_Activation.cmd%
 %Ohook_Activation_AIO.cmd%
 %TSforge_Activation.cmd%
@@ -446,31 +438,29 @@ echo:
 echo:                     Extract $OEM$ folder on the desktop           
 echo:         ____________________________________________________________
 echo:
-echo:            [1] HWID             [Windows]
-echo:            [2] Ohook            [Office]
-echo:            [3] TSforge          [Windows / ESU / Office]
-echo:            [4] KMS38            [Windows]
-echo:            [5] Online KMS       [Windows / Office]
+echo:            [1] HWID       [Windows]
+echo:            [2] Ohook      [Office]
+echo:            [3] TSforge    [Windows / ESU / Office]
+echo:            [4] Online KMS [Windows / Office]
 echo:
-echo:            [6] HWID    [Windows] ^+ Ohook [Office]
-echo:            [7] HWID    [Windows] ^+ Ohook [Office] ^+ TSforge [ESU]
-echo:            [8] TSforge [Windows] ^+ Online KMS [Office]
+echo:            [5] HWID       [Windows] ^+ Ohook [Office]
+echo:            [6] HWID       [Windows] ^+ Ohook [Office] ^+ TSforge [ESU]
+echo:            [7] TSforge    [Windows / ESU] ^+ Ohook [Office]
 echo:
 call :dk_color2 %_White% "            [R] " %_Green% "ReadMe"
 echo:            [0] Exit
 echo:         ____________________________________________________________
 echo:  
 call :dk_color2 %_White% "             " %_Green% "Choose a menu option using your keyboard :"
-choice /C:12345678R0 /N
+choice /C:1234567R0 /N
 set _erl=%errorlevel%
 
-if %_erl%==10 exit /b
-if %_erl%==9 start %mas%oem-folder &goto :Menu
-if %_erl%==8 goto:tsforge_kms
-if %_erl%==7 goto:hwid_ohook_tsforge
-if %_erl%==6 goto:hwid_ohook
-if %_erl%==5 goto:kms
-if %_erl%==4 goto:kms38
+if %_erl%==9 exit /b
+if %_erl%==8 start %mas%oem-folder &goto :Menu
+if %_erl%==7 goto:tsforge_ohook
+if %_erl%==6 goto:hwid_ohook_tsforge
+if %_erl%==5 goto:hwid_ohook
+if %_erl%==4 goto:kms
 if %_erl%==3 goto:tsforge
 if %_erl%==2 goto:ohook
 if %_erl%==1 goto:hwid
@@ -565,36 +555,6 @@ call "%~dp0TSforge_Activation.cmd" /Z-WindowsESUOffice
 cd \
 (goto) 2>nul & (if "%~dp0"=="%SystemRoot%\Setup\Scripts\" rd /s /q "%~dp0")
 :tsforge_setup:
-
-::========================================================================================================================================
-
-:kms38
-
-cls
-md "!desktop!\$OEM$\$$\Setup\Scripts"
-pushd "!_work!"
-copy /y /b "%KMS38_Activation.cmd%" "!_dir!\KMS38_Activation.cmd" %nul%
-popd
-call :export kms38_setup
-
-set _error=
-if not exist "!_dir!\KMS38_Activation.cmd" set _error=1
-if not exist "!_dir!\SetupComplete.cmd" set _error=1
-if defined _error goto errorfound
-
-set oem=KMS38
-goto done
-
-:kms38_setup:
-@echo off
-
-fltmc >nul || exit /b
-
-call "%~dp0KMS38_Activation.cmd" /KMS38
-
-cd \
-(goto) 2>nul & (if "%~dp0"=="%SystemRoot%\Setup\Scripts\" rd /s /q "%~dp0")
-:kms38_setup:
 
 ::========================================================================================================================================
 
@@ -710,41 +670,41 @@ cd \
 
 ::========================================================================================================================================
 
-:tsforge_kms
+:tsforge_ohook
 
 cls
 md "!desktop!\$OEM$\$$\Setup\Scripts"
 pushd "!_work!"
 copy /y /b "%TSforge_Activation.cmd%" "!_dir!\TSforge_Activation.cmd" %nul%
-copy /y /b "%Online_KMS_Activation.cmd%" "!_dir!\Online_KMS_Activation.cmd" %nul%
+copy /y /b "%Ohook_Activation_AIO.cmd%" "!_dir!\Ohook_Activation_AIO.cmd" %nul%
 popd
-call :export tsforge_kms_setup
+call :export tsforge_ohook_setup
 
 set _error=
 if not exist "!_dir!\TSforge_Activation.cmd" set _error=1
-if not exist "!_dir!\Online_KMS_Activation.cmd" set _error=1
+if not exist "!_dir!\Ohook_Activation_AIO.cmd" set _error=1
 if not exist "!_dir!\SetupComplete.cmd" set _error=1
 if defined _error goto errorfound
 
-set oem=TSforge [Windows] + Online KMS [Office]
+set oem=TSforge [Windows / ESU] + Ohook [Office]
 goto done
 
-:tsforge_kms_setup:
+:tsforge_ohook_setup:
 @echo off
 
 fltmc >nul || exit /b
 
 setlocal
-call "%~dp0TSforge_Activation.cmd" /Z-Windows
+call "%~dp0TSforge_Activation.cmd" /Z-Windows /Z-ESU
 endlocal
 
 setlocal
-call "%~dp0Online_KMS_Activation.cmd" /K-Office
+call "%~dp0Ohook_Activation_AIO.cmd" /Ohook
 endlocal
 
 cd \
 (goto) 2>nul & (if "%~dp0"=="%SystemRoot%\Setup\Scripts\" rd /s /q "%~dp0")
-:tsforge_kms_setup:
+:tsforge_ohook_setup:
 
 ::========================================================================================================================================
 
@@ -760,11 +720,6 @@ echo ______________________________________________________________
 echo:
 call :dk_color %Blue% "%oem%"
 call :dk_color %Green% "$OEM$ folder was successfully created on your Desktop."
-echo "%oem%" | find /i "38" %nul% && (
-echo:
-echo To KMS38 activate Server Cor/Acor editions [No GUI Versions],
-echo Check this page %mas%oem-folder
-)
 echo ______________________________________________________________
 
 :done2
