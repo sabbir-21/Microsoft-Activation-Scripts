@@ -407,7 +407,7 @@ title  HWID Activation %masver%
 
 echo:
 echo Initializing...
-call :dk_chkmal
+echo:
 
 for %%# in (
 sppsvc.exe
@@ -1209,19 +1209,19 @@ reg query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Schedule\taskcache\
 set hcount=0
 for %%# in (avira.com kaspersky.com virustotal.com mcafee.com) do (
 find /i "%%#" %SysPath%\drivers\etc\hosts %nul% && set /a hcount+=1)
-if %hcount%==4 set "results=[Antivirus URLs are blocked in hosts]"
+if %hcount%==4 set "results=Antivirus URLs blocked in hosts file"
 
 sc start %_slser% %nul%
 echo "%errorlevel%" | findstr "577 225" %nul% && (
-set "results=%results%[Likely File Infector]"
+set "results=%results%Likely File Infector"
 ) || (
 if not exist %SysPath%\%_slexe% if not exist %SysPath%\alg.exe (set "results=%results%[Likely File Infector]")
 )
 
 if not "%results%%pupfound%"=="" (
-if defined pupfound call :dk_color %Gray% "Checking PUP Activators                 [Found%pupfound%]"
-if defined results call :dk_color %Red% "Checking for Mal%w%ware Infection..."
-if defined results (call :dk_color %Red% "%results%"&set showfix=1)
+if defined pupfound call :dk_color %Gray% "Checking PUP Activators                 [%pupfound%]"
+if defined results call :dk_color %Red% "Checking for Mal%w%ware Infection...     [%results%]"
+call :dk_color %Gray% "It is highly likely that your Windows install is infected with mal%w%ware. Windows cannot be activated."
 set fixes=%fixes% %mas%remove_mal%w%ware
 call :dk_color2 %Blue% "Check this webpage for help - " %_Yellow% " %mas%remove_mal%w%ware"
 echo:
@@ -1239,6 +1239,7 @@ exit /b
 
 :dk_errorcheck
 
+echo:
 set showfix=
 call :dk_chkmal
 
@@ -1938,7 +1939,7 @@ if %_unattended%==1 timeout /t 2 & exit /b
 
 if defined fixes (
 call :dk_color %White% "Follow ALL the ABOVE blue lines.   "
-call :dk_color2 %Blue% "Press [1] to Open Support Webpage " %Gray% " Press [0] to Ignore"
+call :dk_color2 %Blue% "Press [1] to Open Support Webpage " %Gray% " Press [0] to Go Back"
 choice /C:10 /N
 if !errorlevel!==2 exit /b
 if !errorlevel!==1 (start %selfgit% & start %github% & for %%# in (%fixes%) do (start %%#))
