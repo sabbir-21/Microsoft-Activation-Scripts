@@ -1201,27 +1201,27 @@ exit /b
 
 set w=
 set results=
-if exist "%ProgramFiles%\KM%w%Spico" set pupfound= KM%w%Spico 
+if exist "%ProgramFiles%\KM%w%Spico" set pupfound=[KM%w%Spico] 
 if not defined pupfound (
-reg query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Schedule\taskcache\tasks" /f Path /s | find /i "AutoPico" %nul% && set pupfound= KM%w%Spico 
+reg query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Schedule\taskcache\tasks" /f Path /s | find /i "AutoPico" %nul% && set pupfound=[KM%w%Spico] 
 )
 
 set hcount=0
 for %%# in (avira.com kaspersky.com virustotal.com mcafee.com) do (
 find /i "%%#" %SysPath%\drivers\etc\hosts %nul% && set /a hcount+=1)
-if %hcount%==4 set "results=Antivirus URLs blocked in hosts file"
+if %hcount%==4 set "results=[Antivirus Domains Blocked In Hosts File] "
 
 sc start %_slser% %nul%
 echo "%errorlevel%" | findstr "577 225" %nul% && (
-set "results=%results%Likely File Infector"
+set "results=%results%[Likely File Infector]"
 ) || (
 if not exist %SysPath%\%_slexe% if not exist %SysPath%\alg.exe (set "results=%results%[Likely File Infector]")
 )
 
 if not "%results%%pupfound%"=="" (
-if defined pupfound call :dk_color %Gray% "Checking PUP Activators                 [%pupfound%]"
-if defined results call :dk_color %Red% "Checking for Mal%w%ware Infection...     [%results%]"
-call :dk_color %Gray% "It is highly likely that your Windows install is infected with mal%w%ware. Windows cannot be activated."
+if defined pupfound call :dk_color %Gray% "Checking PUP Activators                 %pupfound%"
+if defined results call :dk_color %Red% "Checking for Mal%w%ware Infection...       %results%"
+call :dk_color %Gray% "It is highly likely that your Windows install is infected with mal%w%ware. Windows may fail to activate."
 set fixes=%fixes% %mas%remove_mal%w%ware
 call :dk_color2 %Blue% "Check this webpage for help - " %_Yellow% " %mas%remove_mal%w%ware"
 echo:
