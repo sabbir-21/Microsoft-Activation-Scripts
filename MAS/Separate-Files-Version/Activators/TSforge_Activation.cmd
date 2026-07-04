@@ -1,4 +1,4 @@
-@set masver=3.11
+@set masver=3.12
 @echo off
 
 
@@ -77,6 +77,18 @@ set "Path=%SystemRoot%\Sysnative;%SystemRoot%;%SystemRoot%\Sysnative\Wbem;%Syste
 set "ComSpec=%SysPath%\cmd.exe"
 set "PSModulePath=%ProgramFiles%\WindowsPowerShell\Modules;%SysPath%\WindowsPowerShell\v1.0\Modules"
 
+cd /d "%SysPath%"
+
+:: Workaround for https://github.com/microsoft/terminal/issues/15212, when %0 starts with a quote %0 parameter expansion is not specialcased.
+:: Changing %0 to something that is not quoted bypasses the issue.
+goto arg_workaround_end
+:arg_workaround
+set "_cmdf=%~f0"
+exit /b
+:arg_workaround_end
+
+call :arg_workaround
+
 set re1=
 set re2=
 set "_cmdf=%~f0"
@@ -154,8 +166,7 @@ cls
 
 ::  Check LF line ending
 
-pushd "%~dp0"
->nul findstr /v "$" "%~nx0" && (
+>nul findstr /v "$" "%_cmdf%" && (
 echo:
 echo Error - Script either has LF line ending issue or an empty line at the end of the script is missing.
 echo:
@@ -164,10 +175,8 @@ echo Check this webpage for help - %mas%troubleshoot
 echo:
 echo:
 ping 127.0.0.1 -n 20 >nul
-popd
 exit /b
 )
-popd
 
 ::========================================================================================================================================
 
@@ -271,10 +280,9 @@ goto dk_done
 set "_work=%~dp0"
 if "%_work:~-1%"=="\" set "_work=%_work:~0,-1%"
 
-set "_batf=%~f0"
-set "_batp=%_batf:'=''%"
+set "_batp=%_cmdf:'=''%"
 
-set _PSarg="""%~f0""" -el %_args%
+set _PSarg="""%_cmdf%""" -el %_args%
 set _PSarg=%_PSarg:'=''%
 
 set "_ttemp=%userprofile%\AppData\Local\Temp"
@@ -283,7 +291,7 @@ setlocal EnableDelayedExpansion
 
 ::========================================================================================================================================
 
-echo "!_batf!" | find /i "!_ttemp!" %nul1% && (
+echo "!_cmdf!" | find /i "!_ttemp!" %nul1% && (
 if /i not "!_work!"=="!_ttemp!" (
 %eline%
 echo The script was launched from the temp folder.
@@ -413,11 +421,11 @@ reg query HKCU\Console /v QuickEdit %nul2% | find /i "0x0" %nul1% && set resetQE
 reg add HKCU\Console /v QuickEdit /t REG_DWORD /d 0 /f %nul1%
 
 if defined terminal (
-start conhost.exe "!_batf!" %_args% -qedit
+start conhost.exe "!_cmdf!" %_args% -qedit
 start reg add HKCU\Console /v QuickEdit /t REG_DWORD /d %resetQE% /f %nul1%
 exit /b
 ) else if %resetQE% EQU 1 (
-start cmd.exe /c ""!_batf!" %_args% -qedit"
+start cmd.exe /c ""!_cmdf!" %_args% -qedit"
 start reg add HKCU\Console /v QuickEdit /t REG_DWORD /d %resetQE% /f %nul1%
 exit /b
 )
@@ -538,7 +546,9 @@ echo:
 echo        ______________________________________________________________
 echo: 
 call :dk_color2 %_White% "             [1] " %_Green% "Auto"
-echo                  Builds ^>= 26100 - StaticCID (KMS4k if offline)
+echo                  Builds ^>= 26100 - Windows only  - KMS4k
+echo                                    Other options - StaticCID
+echo:
 echo                  Builds ^<  26100 - ZeroCID
 echo              __________________________________________________
 echo: 
@@ -659,6 +669,9 @@ if /i %_actmethod%==KMS4k set tsmethod=KMS4k
 if /i %_actmethod%==Auto (
 if %winbuild% GEQ 26100 (
 set tsmethod=StaticCID
+if !_actwin!==1 if not !_actwinesuoff!==1 (
+set tsmethod=KMS4k
+)
 ) else (
 set tsmethod=ZeroCID
 )
@@ -774,7 +787,7 @@ call :dk_color %Red% "Checking Activation ID                  [Not Found] [%tsed
 set error=1
 if /i %tsmethod%==KMS4k (
 if /i %_actmethod%==Auto (
-call :dk_color %Blue% "Connect to the Internet and try again. Script will use the StaticCID activation method."
+call :dk_color %Blue% "Return to the previous menu and select StaticCID activation method. Internet connection is required to activate."
 ) else (
 call :dk_color %Blue% "Use non-KMS4K activation options from the previous menu."
 )
@@ -1946,7 +1959,7 @@ if %_actman%==0 (if not defined showfix call :dk_color %Blue% "%_fixmsg%")
 set fixes=%fixes% %mas%troubleshoot
 call :dk_color2 %Blue% "Check this webpage for help - " %_Yellow% " %mas%troubleshoot"
 ) else (
-if /i %tsmethod%==KMS4k if %winbuild% GEQ 26100 (
+if /i %tsmethod%==KMS4k if %winbuild% GEQ 26100 if %_actwin%==1 (
 echo:
 call :dk_color %Gray% "In Windows settings, you may see a renewal notification for activation that can be ignored."
 if /i %_actmethod%==Auto call :dk_color %Gray% "To avoid this notification, run the script with an internet connection to use the StaticCID method."
@@ -8825,27 +8838,27 @@ namespace LibTSforge.PhysicalStore
 }
 '@
 $ErrorActionPreference = 'Stop'
-$binPath = "$env:_work\BIN\LibTSforge.dll"
 $psMajorVer = (Get-Host).Version.Major
 $build = [System.Environment]::OSVersion.Version.Build
 
-if (Test-Path -LiteralPath $binPath) {
-    Write-Host "LibTSforge.dll found in BIN folder. Loading the DLL..."
-    Add-Type -Path $binPath
-}
-else {
-    $cp = [CodeDom.Compiler.CompilerParameters] [string[]]@("System.dll", "System.Core.dll", "System.ServiceProcess.dll", "System.Xml.dll", "System.Xml.Linq.dll")
-    if ($psMajorVer -le 2) { $cp.CompilerOptions = "/define:POWERSHELL2 /unsafe" } else { $cp.CompilerOptions = "/unsafe" }
-    $lang = if ($psMajorVer -gt 2) { "CSharp" } else { "CSharpVersion3" }
+$cp = [CodeDom.Compiler.CompilerParameters] [string[]]@("System.dll", "System.Core.dll", "System.ServiceProcess.dll", "System.Xml.dll", "System.Xml.Linq.dll")
+if ($psMajorVer -le 2) { $cp.CompilerOptions = "/define:POWERSHELL2 /unsafe" } else { $cp.CompilerOptions = "/unsafe" }
+$lang = if ($psMajorVer -gt 2) { "CSharp" } else { "CSharpVersion3" }
 
-    $ctemp = "$env:SystemRoot\Temp\"
-    if (-Not (Test-Path -Path $ctemp)) { New-Item -Path $ctemp -ItemType Directory > $null }
-    $env:TMP = $ctemp
-    $env:TEMP = $ctemp
+$ctemp = "$env:SystemRoot\Temp\$([Guid]::NewGuid().Guid)\"
+if (-Not (Test-Path -Path $ctemp)) { New-Item -Path $ctemp -ItemType Directory > $null }
+$env:TMP = $ctemp
+$env:TEMP = $ctemp
 
-    $cp.GenerateInMemory = $true
-    Add-Type -Language $lang -TypeDefinition $src -CompilerParameters $cp
+$cp.GenerateInMemory = $true
+Add-Type -Language $lang -TypeDefinition $src -CompilerParameters $cp
+
+try {
+    $cp.TempFiles.Dispose()
+} catch {
+# Older .NET Framework versions do not have that method, but they also don't create the folder that it removes.
 }
+Remove-Item -Path $ctemp
 
 if ($env:_debug -eq '0') {
     [LibTSforge.Logger]::HideOutput = $true
@@ -8947,7 +8960,7 @@ if (-not $env:resetstuff) {
                     if ($env:tsmethod -eq "KMS4k") {
                         if ($build -ge 26100) {
                             Write-Host "[$prodName] is activated with KMS4k for over 4,000 years." -ForegroundColor White -BackgroundColor DarkGreen
-                            Write-Host "From build 26100.7019, Windows will always display and stay at 180 days remaining if the actual period is longer." -ForegroundColor White -BackgroundColor Darkgray
+                            Write-Host "From build 26100.7019, Windows will always display a remaining activation period of 180 days in Settings." -ForegroundColor White -BackgroundColor Darkgray
                         }
                         else {
                             Write-Host "[$prodName] is activated till $([DateTime]::Now.AddMinutes($GracePeriodStatus).ToString('yyyy-MM-dd HH:mm:ss')) with $env:tsmethod." -ForegroundColor White -BackgroundColor DarkGreen

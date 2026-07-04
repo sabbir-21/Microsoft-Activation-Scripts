@@ -1,4 +1,4 @@
-@set masver=3.11
+@set masver=3.12
 @echo off
 
 
@@ -479,6 +479,19 @@ call :dk_color2 %Blue% "Check this webpage for help - " %_Yellow% " %mas%trouble
 goto dk_done
 )
 
+set "o_randguid="
+for /f %%G in ('%psc% "[Guid]::NewGuid().Guid" ^| findstr /r "^[0123456789abcdef]*-[0123456789abcdef]*-[0123456789abcdef]*-[0123456789abcdef]*-[0123456789abcdef]*$"') do set "o_randguid=%%G"
+if not defined o_randguid (
+set "o_randguid="
+%eline%
+echo Unable to generate GUID with PowerShell.
+echo Aborting...
+set fixes=%fixes% %mas%troubleshoot
+call :dk_color2 %Blue% "Check this webpage for help - " %_Yellow% " %mas%troubleshoot"
+goto dk_done
+)
+md "%SystemRoot%\Temp\%o_randguid%\"
+
 ::========================================================================================================================================
 
 :oemenu
@@ -577,7 +590,7 @@ mode 98, 45
 %psc% "&{$W=$Host.UI.RawUI.WindowSize;$B=$Host.UI.RawUI.BufferSize;$W.Height=44;$B.Height=100;$Host.UI.RawUI.WindowSize=$W;$Host.UI.RawUI.BufferSize=$B;}" %nul%
 )
 
-if not exist %SystemRoot%\Temp\%list%.txt (
+if not exist %SystemRoot%\Temp\%o_randguid%\%list%.txt (
 %eline%
 echo Failed to generate available editions list.
 set fixes=%fixes% %mas%troubleshoot
@@ -599,7 +612,7 @@ if %winbuild% LSS 10240 (
 echo Unsupported products such as 2019/2021/2024 are excluded from this list.
 ) else (
 for %%# in (2019 2021 2024) do (
-find /i "%%#" "%SystemRoot%\Temp\%list%.txt" %nul1% || (
+find /i "%%#" "%SystemRoot%\Temp\%o_randguid%\%list%.txt" %nul1% || (
 if defined _notfound (set _notfound=%%#, !_notfound!) else (set _notfound=%%#)
 )
 )
@@ -608,7 +621,7 @@ if defined _notfound call :dk_color %Gray% "Office !_notfound! is not in this li
 %line%
 echo:
 
-for /f "usebackq delims=" %%A in (%SystemRoot%\Temp\%list%.txt) do (
+for /f "usebackq delims=" %%A in (%SystemRoot%\Temp\%o_randguid%\%list%.txt) do (
 set /a counter+=1
 if !counter! LSS 10 (
 echo [!counter!]  %%A
@@ -641,7 +654,7 @@ set suites=
 echo %list% | find /i "Suites" %nul1% && (
 set suites=1
 %psc% "$f=[IO.File]::ReadAllText('!_batp!') -split ':getappnames\:.*';. ([scriptblock]::Create($f[1]))"
-if not exist %SystemRoot%\Temp\getAppIds.txt (
+if not exist %SystemRoot%\Temp\%o_randguid%\getAppIds.txt (
 %eline%
 echo Failed to generate available apps list.
 set fixes=%fixes% %mas%troubleshoot
@@ -663,7 +676,7 @@ Visio
 Word
 ) do (
 if defined suites (
-find /i "%%#" "%SystemRoot%\Temp\getAppIds.txt" %nul1% && (set %%#_st=On) || (set %%#_st=)
+find /i "%%#" "%SystemRoot%\Temp\%o_randguid%\getAppIds.txt" %nul1% && (set %%#_st=On) || (set %%#_st=)
 ) else (
 set %%#_st=
 )
@@ -1287,11 +1300,11 @@ exit /b
 
 :oe_tempcleanup
 
-del /f /q %SystemRoot%\Temp\SingleApps_Volume.txt %nul%
-del /f /q %SystemRoot%\Temp\SingleApps_Retail.txt %nul%
-del /f /q %SystemRoot%\Temp\Suites_Volume.txt %nul%
-del /f /q %SystemRoot%\Temp\Suites_Retail.txt %nul%
-del /f /q %SystemRoot%\Temp\getAppIds.txt %nul%
+del %SystemRoot%\Temp\%o_randguid%\SingleApps_Volume.txt %nul%
+del %SystemRoot%\Temp\%o_randguid%\SingleApps_Retail.txt %nul%
+del %SystemRoot%\Temp\%o_randguid%\Suites_Volume.txt %nul%
+del %SystemRoot%\Temp\%o_randguid%\Suites_Retail.txt %nul%
+del %SystemRoot%\Temp\%o_randguid%\getAppIds.txt %nul%
 exit /b
 
 ::========================================================================================================================================
@@ -1445,7 +1458,7 @@ if ($windowsBuild -lt 9200) {
 :getlist:
 $xmlPath1 = $env:_c2rXml
 $xmlPath2 = $env:_masterxml
-$outputDir = $env:SystemRoot + "\Temp\"
+$outputDir = $env:SystemRoot + "\Temp\$env:o_randguid\"
 $buildNumber = [System.Environment]::OSVersion.Version.Build
 $excludedKeywords = @("2019", "2021", "2024")
 $productReleaseIds = @()
@@ -1505,7 +1518,7 @@ foreach ($section in $categories.Keys) {
 :getappnames:
 $xmlPath = $env:_masterxml
 $targetSkuId = $env:targetedition
-$outputDir = $env:SystemRoot + "\Temp\"
+$outputDir = $env:SystemRoot + "\Temp\$env:o_randguid\"
 $outputFile = Join-Path -Path $outputDir -ChildPath "getAppIds.txt"
 $excludeIds = @("shared", "PowerPivot", "PowerView", "MondoOnly", "OSM", "OSMUX", "Groove", "DCF")
 

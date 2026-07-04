@@ -1,4 +1,4 @@
-@set masver=3.11
+@set masver=3.12
 @echo off
 
 
@@ -42,6 +42,18 @@ set "Path=%SystemRoot%\Sysnative;%SystemRoot%;%SystemRoot%\Sysnative\Wbem;%Syste
 
 set "ComSpec=%SysPath%\cmd.exe"
 set "PSModulePath=%ProgramFiles%\WindowsPowerShell\Modules;%SysPath%\WindowsPowerShell\v1.0\Modules"
+
+cd /d "%SysPath%"
+
+:: Workaround for https://github.com/microsoft/terminal/issues/15212, when %0 starts with a quote %0 parameter expansion is not specialcased.
+:: Changing %0 to something that is not quoted bypasses the issue.
+goto arg_workaround_end
+:arg_workaround
+set "_cmdf=%~f0"
+exit /b
+:arg_workaround_end
+
+call :arg_workaround
 
 set re1=
 set re2=
@@ -120,8 +132,7 @@ cls
 
 ::  Check LF line ending
 
-pushd "%~dp0"
->nul findstr /v "$" "%~nx0" && (
+>nul findstr /v "$" "%_cmdf%" && (
 echo:
 echo Error - Script either has LF line ending issue or an empty line at the end of the script is missing.
 echo:
@@ -130,10 +141,8 @@ echo Check this webpage for help - %mas%troubleshoot
 echo:
 echo:
 ping 127.0.0.1 -n 20 >nul
-popd
 exit /b
 )
-popd
 
 ::========================================================================================================================================
 
@@ -214,10 +223,9 @@ goto dk_done
 set "_work=%~dp0"
 if "%_work:~-1%"=="\" set "_work=%_work:~0,-1%"
 
-set "_batf=%~f0"
-set "_batp=%_batf:'=''%"
+set "_batp=%_cmdf:'=''%"
 
-set _PSarg="""%~f0""" -el %_args%
+set _PSarg="""%_cmdf%""" -el %_args%
 set _PSarg=%_PSarg:'=''%
 
 set "_ttemp=%userprofile%\AppData\Local\Temp"
@@ -226,7 +234,7 @@ setlocal EnableDelayedExpansion
 
 ::========================================================================================================================================
 
-echo "!_batf!" | find /i "!_ttemp!" %nul1% && (
+echo "!_cmdf!" | find /i "!_ttemp!" %nul1% && (
 if /i not "!_work!"=="!_ttemp!" (
 %eline%
 echo The script was launched from the temp folder.
@@ -356,11 +364,11 @@ reg query HKCU\Console /v QuickEdit %nul2% | find /i "0x0" %nul1% && set resetQE
 reg add HKCU\Console /v QuickEdit /t REG_DWORD /d 0 /f %nul1%
 
 if defined terminal (
-start conhost.exe "!_batf!" %_args% -qedit
+start conhost.exe "!_cmdf!" %_args% -qedit
 start reg add HKCU\Console /v QuickEdit /t REG_DWORD /d %resetQE% /f %nul1%
 exit /b
 ) else if %resetQE% EQU 1 (
-start cmd.exe /c ""!_batf!" %_args% -qedit"
+start cmd.exe /c ""!_cmdf!" %_args% -qedit"
 start reg add HKCU\Console /v QuickEdit /t REG_DWORD /d %resetQE% /f %nul1%
 exit /b
 )
@@ -1150,17 +1158,8 @@ set ierror=mklink sppcs.dll
 goto :oh_hookinstall_error
 )
 
-set exhook=
-if exist "!_work!\BIN\%_hook%" set exhook=1
-
 if not exist "%_hookPath%\sppc.dll" (
-if defined exhook (
-pushd "!_work!\BIN\"
-copy /y /b "%_hook%" "%_hookPath%\sppc.dll" %nul%
-popd
-) else (
 call :oh_extractdll "%_hookPath%\sppc.dll" "%offset%"
-)
 )
 if not exist "%_hookPath%\sppc.dll" (
 set ierror=Copy
@@ -1169,11 +1168,7 @@ goto :oh_hookinstall_error
 
 echo:
 echo Symlinking System's sppc.dll            ["%_hookPath%\sppcs.dll"] [Successful]
-if defined exhook (
-echo Copying Custom %_hook% to            ["%_hookPath%\sppc.dll"] [Successful]
-) else (
 echo Extracting Custom %_hook% to         ["%_hookPath%\sppc.dll"] [Successful]
-)
 
 goto :oh_hookinstall_error
 
@@ -1239,18 +1234,8 @@ set ierror=mklink sppcs.dll
 goto :oh_hookinstall_error
 )
 
-set exhook=
-if exist "!_work!\BIN\%_hook68%" if exist "!_work!\BIN\%_hook86%"  set exhook=1
-
-if defined exhook (
-pushd "!_work!\BIN\"
-if defined _osppPath68 (copy /y /b "%_hook68%" "%_osppPath68%\OSPPC.DLL" %nul%)
-if defined _osppPath86 (copy /y /b "%_hook86%" "%_osppPath86%\OSPPC.DLL" %nul%)
-popd
-) else (
 if defined _osppPath68 (set _hook=%_hook68%&call :oh_extractdll "%_osppPath68%\OSPPC.DLL" "%offset68%")
 if defined _osppPath86 (set _hook=%_hook86%&call :oh_extractdll "%_osppPath86%\OSPPC.DLL" "%offset86%")
-)
 
 if defined _osppPath68 (if not exist "%_osppPath68%\OSPPC.DLL" set ierror=1)
 if defined _osppPath86 (if not exist "%_osppPath86%\OSPPC.DLL" set ierror=1)
@@ -1263,13 +1248,8 @@ goto :oh_hookinstall_error
 echo:
 if defined _osppPath68 (echo Renaming OSPPC.DLL to sppcs.dll         ["%_osppPath68%\sppcs.dll"])
 if defined _osppPath86 (echo Renaming OSPPC.DLL to sppcs.dll         ["%_osppPath86%\sppcs.dll"])
-if defined exhook (
-if defined _osppPath68 (echo Copying Custom %_hook68% to            ["%_osppPath68%\OSPPC.DLL"])
-if defined _osppPath86 (echo Copying Custom %_hook86% to            ["%_osppPath86%\OSPPC.DLL"])
-) else (
 if defined _osppPath68 (echo Extracting Custom %_hook68% to         ["%_osppPath68%\OSPPC.DLL"])
 if defined _osppPath86 (echo Extracting Custom %_hook86% to         ["%_osppPath86%\OSPPC.DLL"])
-)
 
 echo Symlinking Renamed sppcs.dll            ["%_hookPath%\sppcs.dll"]
 
@@ -3186,7 +3166,7 @@ $Writer.Write($unixTimestamp)
 $Writer.Flush()
 
 # Write the current state of the MemoryStream to a temporary file
-$tempFilePath = "$env:windir\Temp\$([System.IO.Path]::GetRandomFileName())"
+$tempFilePath = "$env:windir\Temp\$([Guid]::NewGuid().Guid)"
 [IO.File]::WriteAllBytes($tempFilePath, $MemoryStream.ToArray())
 
 # Update hash using the temporary file
@@ -3237,12 +3217,6 @@ $MemoryStream.Close()
 ::  Here you can check how to extract sppc.dll files from base64
 ::
 ::  For any further question, feel free to contact us on mass{}grave{dot}dev/contactus
-::
-::========================================================================================================================================
-::
-::  If you want to use a different sppc.dll or without base64 format, then create a folder named "BIN" where this script is located and 
-::  place these two files in that "BIN" folder. sppc32.dll, sppc64.dll
-::  Script will auto pick that instead of using the below from base64 section. You can also delete the below code in that case.
 ::
 ::========================================================================================================================================
 ::
